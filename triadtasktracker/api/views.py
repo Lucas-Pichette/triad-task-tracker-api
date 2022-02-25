@@ -49,10 +49,14 @@ def get_task(request, task_id):
 
 @csrf_exempt
 def tasks(request):
-    print('test')
+    print('method: ', request.method)
     if request.method == 'GET':
         print('GET test')
         return get_tasks(request)
+    elif request.method == 'DELETE':
+        return delete_task(request)
+    elif request.method == 'PATCH':
+        return update_task(request)
     elif request.method == 'POST':
         print('POST test')
         return add_task(request)
@@ -72,6 +76,7 @@ def get_tasks(request):
             dict_response = {}
             dict_response['name'] = t.name
             dict_response['completed'] = t.completed
+            dict_response['id'] = t.id
 
             arr_dict_response.append(dict_response)
         response = json.dumps(arr_dict_response)
@@ -81,6 +86,30 @@ def get_tasks(request):
         response = json.dumps([{ 'Error': 'Issue retrieving tasks' }])
     return HttpResponse(response, content_type='text/json')
 
+def delete_task(request):
+    payload = json.loads(request.body)
+    task_id = payload['id']
+    try:
+        Task.objects.filter(id=task_id).delete()
+        response = json.dumps([{ 'Success': 'Task deleted successfully'}])
+    except:
+        response = json.dumps([{ 'Error': 'Task with specified id could not be found/deleted'}])
+    return HttpResponse(response, content_type='text/json')
+
+def update_task(request):
+    payload = json.loads(request.body)
+    task_id = payload['id']
+    try:
+        task = Task.objects.get(id=task_id)
+        print("TESTING COMPLETION OF TASK:",task.completed)
+        if task.completed == 1:
+            Task.objects.filter(id=task_id).update(completed=0)
+        elif task.completed == 0:
+            Task.objects.filter(id=task_id).update(completed=1)
+        response = json.dumps([{ 'Success': 'Task updated successfully'}])
+    except:
+        response = json.dumps([{ 'Error': 'Task with specified id could not be found/updated'}])
+    return HttpResponse(response, content_type='text/json')
 
 def add_task(request):
     print('pre-trying to add tasks')
